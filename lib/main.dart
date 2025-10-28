@@ -30,13 +30,6 @@ class SmartCareApp extends StatelessWidget {
         themeMode: ThemeMode.light,
         home: Consumer<AuthController>(
           builder: (context, authController, child) {
-            // if (authController.state.status == AuthStatus.loading) {
-            //   return const Scaffold(
-            //     body: Center(
-            //       child: CircularProgressIndicator(),
-            //     ),
-            //   );
-            // }
 
             if (authController.state.status == AuthStatus.loading) {
               return const SplashScreen(); 
