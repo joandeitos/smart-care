@@ -90,3 +90,4 @@ lib/generated_plugin_registrant.dart
 
 # Firebase Config (arquivo com credenciais sensíveis)
 lib/config/firebase_config.dart
+lib/config/encryption_key.dart

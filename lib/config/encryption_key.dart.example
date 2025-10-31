@@ -1,0 +1,9 @@
+/// ATENÇÃO: Este é um arquivo de exemplo.
+/// Renomeie este arquivo para `encryption_key.dart` e substitua o valor
+/// da variável `encryptionKey` pela sua chave de criptografia real de 32 bytes.
+///
+/// IMPORTANTE: O arquivo `encryption_key.dart` está no .gitignore
+/// para evitar que sua chave secreta seja enviada para o controle de versão.
+/// Certifique-se de que ele permaneça lá.
+
+const String encryptionKey = 'SUA_CHAVE_DE_CRIPTOGRAFIA_DE_32_BYTES_AQUI';
