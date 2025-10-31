@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smart_care/components/custom_appbar.dart';
 import 'package:smart_care/utils/validators.dart';
 
 import '../../services/auth_service.dart';
@@ -81,10 +82,8 @@ class _SecurityViewState extends State<SecurityView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Segurança'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+      appBar: const CustomAppBar(
+        title: 'Segurança',
       ),
       body: Container(
         decoration: BoxDecoration(

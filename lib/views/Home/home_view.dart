@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_care/controllers/auth_controller.dart';
 import 'package:smart_care/views/Profile/profile_view.dart';
+import 'package:smart_care/views/Patients/patient_list_view.dart';
+import 'package:smart_care/components/custom_appbar.dart';
 
 import '../Login/login_view.dart';
 import '../Profile/account_info_view.dart';
@@ -38,10 +40,8 @@ class HomeView extends StatelessWidget {
         final user = authController.currentUser;
 
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('Smart Care'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            foregroundColor: Colors.white,
+          appBar: const CustomAppBar(
+            title: 'Smart Care',
             /*actions: [
               IconButton(
                 icon: const Icon(Icons.logout),
@@ -217,17 +217,14 @@ class HomeView extends StatelessWidget {
                                     title: 'Pacientes',
                                     description: 'Gerenciar pacientes',
                                     onTap: () {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Funcionalidade em desenvolvimento',
-                                          ),
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) => const PatientListView(),
                                         ),
                                       );
                                     },
                                   ),
+
                                   _buildFeatureCard(
                                     context,
                                     icon: Icons.history,

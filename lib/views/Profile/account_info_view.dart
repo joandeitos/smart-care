@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smart_care/components/custom_appbar.dart';
 import 'package:smart_care/views/Configuration/categories_view.dart';
 
 class AccountInfoView extends StatelessWidget {
@@ -7,10 +8,8 @@ class AccountInfoView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Configurações'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+      appBar: const CustomAppBar(
+        title: 'Configurações',
       ),
       body: Container(
         decoration: BoxDecoration(

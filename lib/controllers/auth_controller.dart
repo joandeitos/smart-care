@@ -138,6 +138,7 @@ class AuthController extends ChangeNotifier {
   Future<bool> updateProfile({
     String? displayName,
     String? photoURL,
+    String? professionId,
   }) async {
     try {
       _updateState(AuthStatus.loading, isLoading: true);
@@ -145,8 +146,13 @@ class AuthController extends ChangeNotifier {
       await _authService.updateProfile(
         displayName: displayName,
         photoURL: photoURL,
+        professionId: professionId,
       );
 
+      // Aguarda um pouco mais para garantir que o Firebase Auth propagou a atualização
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Obtém o usuário atualizado do Firebase Auth
       final currentUser = _authService.currentUser;
       if (currentUser != null) {
         _updateState(AuthStatus.authenticated, user: currentUser, isLoading: false);

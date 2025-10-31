@@ -8,6 +8,8 @@ import 'package:smart_care/views/Login/login_view.dart';
 import 'package:smart_care/views/Home/home_view.dart';
 
 import 'package:smart_care/views/SplashScreen/splash_screen.dart';
+import 'package:smart_care/views/Patients/patient_register_view.dart';
+import 'package:smart_care/views/Patients/patient_list_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +47,8 @@ class SmartCareApp extends StatelessWidget {
         routes: {
           '/login': (context) => const LoginView(),
           '/home': (context) => const HomeView(),
+          '/patients/register': (context) => const PatientRegisterView(),
+          '/patients': (context) => const PatientListView(),
         },
       ),
     );

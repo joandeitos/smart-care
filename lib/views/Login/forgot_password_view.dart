@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:smart_care/services/auth_service.dart';
 import 'package:smart_care/utils/validators.dart';
+import 'package:smart_care/components/custom_appbar.dart';
 
 class ForgotPasswordView extends StatefulWidget {
   const ForgotPasswordView({super.key});
@@ -55,10 +56,8 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Recuperar Senha'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+      appBar: const CustomAppBar(
+        title: 'Recuperar Senha',
       ),
       body: Container(
         decoration: BoxDecoration(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smart_care/components/custom_appbar.dart';
 import 'package:smart_care/models/profession_model.dart';
 import 'package:smart_care/services/profession_service.dart';
 
@@ -23,10 +24,8 @@ class _ProfessionSelectionExampleState extends State<ProfessionSelectionExample>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Selecione sua Profissão'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+      appBar: const CustomAppBar(
+        title: 'Selecione sua Profissão',
       ),
       body: StreamBuilder<List<ProfessionModel>>(
         stream: _professionService.getActiveProfessions(),

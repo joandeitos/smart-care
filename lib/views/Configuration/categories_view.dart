@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smart_care/components/custom_appbar.dart';
 import 'package:smart_care/models/category_model.dart';
 import 'package:smart_care/services/category_service.dart';
 import 'package:smart_care/services/auth_service.dart';
@@ -262,10 +263,8 @@ class _CategoriesViewState extends State<CategoriesView> {
     
     if (user?.uid == null) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Categorias'),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          foregroundColor: Colors.white,
+        appBar: const CustomAppBar(
+          title: 'Categorias',
         ),
         body: const Center(
           child: Text('Usuário não autenticado'),
@@ -288,10 +287,8 @@ class _CategoriesViewState extends State<CategoriesView> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Categorias'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+      appBar: CustomAppBar(
+        title: 'Categorias',
         actions: [
           IconButton(
             icon: const Icon(Icons.add),

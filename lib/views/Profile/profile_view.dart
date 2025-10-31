@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_care/controllers/auth_controller.dart';
 import 'package:smart_care/models/profession_model.dart';
-import 'package:smart_care/services/auth_service.dart';
 import 'package:smart_care/services/profession_service.dart';
 import 'package:smart_care/services/user_service.dart';
 import 'package:smart_care/utils/validators.dart';
-import 'package:smart_care/views/Profile/account_info_view.dart';
 import 'package:smart_care/views/Profile/security_view.dart';
+import 'package:smart_care/components/custom_appbar.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../theme/app_theme.dart';
 import '../Login/login_view.dart';
@@ -26,6 +26,8 @@ class _ProfileViewState extends State<ProfileView> {
   bool _isLoading = false;
   bool _isEditing = false;
   ProfessionModel? _selectedProfession;
+  List<ProfessionModel> _professions = [];
+  bool _professionsLoaded = false;
 
   final _professionService = ProfessionService.instance;
 
@@ -33,10 +35,36 @@ class _ProfileViewState extends State<ProfileView> {
   void initState() {
     super.initState();
     _loadUserData();
+    _loadProfessions();
+  }
+
+  Future<void> _loadProfessions() async {
+    if (!_professionsLoaded) {
+      try {
+        final professions = await _professionService.getAllProfessions();
+        if (mounted) {
+          setState(() {
+            _professions = professions.where((p) => p.isActive).toList();
+            _professions.sort((a, b) => a.name.compareTo(b.name));
+            _professionsLoaded = true;
+          });
+        }
+      } catch (e) {
+        print('Erro ao carregar profissões: $e');
+        if (mounted) {
+          setState(() {
+            _professionsLoaded = true;
+          });
+        }
+      }
+    }
   }
 
   Future<void> _loadUserData() async {
     final user = Provider.of<AuthController>(context, listen: false).currentUser;
+
+    debugPrint('User: $user');
+
     if (user != null && user.uid != null) {
       _nameController.text = user.displayName ?? '';
       
@@ -74,9 +102,80 @@ class _ProfileViewState extends State<ProfileView> {
     });
 
     try {
-      await AuthService.instance.updateProfile(
+      final String professionText = _professionController.text.trim();
+      String? professionId = _selectedProfession?.id;
+      
+      // Se o usuário digitou uma profissão que não existe na lista, criar ou buscar
+      if (professionText.isNotEmpty) {
+        if (professionId == null) {
+          // Buscar se existe uma profissão com o mesmo nome
+          try {
+            final allProfessions = await _professionService.getAllProfessions();
+            ProfessionModel? existing;
+            try {
+              existing = allProfessions.firstWhere(
+                (p) => p.name.toLowerCase() == professionText.toLowerCase(),
+              );
+            } catch (e) {
+              existing = null;
+            }
+            
+            if (existing != null) {
+              final existingProfession = existing; // Promovido para non-null pelo if
+              if (existingProfession.id.isNotEmpty) {
+                professionId = existingProfession.id;
+                // Ativar se estiver inativa
+                if (!existingProfession.isActive) {
+                  await _professionService.activateProfession(existingProfession.id);
+                  // Adiciona à lista cacheada se não estiver lá
+                  if (mounted && !_professions.any((p) => p.id == existingProfession.id)) {
+                    setState(() {
+                      final activated = ProfessionModel(
+                        id: existingProfession.id,
+                        name: existingProfession.name,
+                        description: existingProfession.description,
+                        isActive: true,
+                        createdAt: existingProfession.createdAt,
+                        updatedAt: DateTime.now(),
+                      );
+                      _professions.add(activated);
+                      _professions.sort((a, b) => a.name.compareTo(b.name));
+                    });
+                  }
+                }
+              }
+            } else {
+              // Criar nova profissão com UUID
+              final now = DateTime.now();
+              final professionIdNew = const Uuid().v4();
+              final newProfession = ProfessionModel(
+                id: professionIdNew,
+                name: professionText,
+                isActive: true,
+                createdAt: now,
+                updatedAt: now,
+              );
+              await _professionService.createOrUpdateProfession(newProfession);
+              professionId = professionIdNew;
+              // Adiciona a nova profissão à lista cacheada
+              if (mounted) {
+                setState(() {
+                  _professions.add(newProfession);
+                  _professions.sort((a, b) => a.name.compareTo(b.name));
+                });
+              }
+            }
+          } catch (e) {
+            // Se falhar ao criar/buscar profissão, continua com null
+            print('Erro ao processar profissão: $e');
+          }
+        }
+      }
+      
+      final authController = Provider.of<AuthController>(context, listen: false);
+      final success = await authController.updateProfile(
         displayName: _nameController.text.trim(),
-        professionId: _selectedProfession?.id,
+        professionId: professionId,
       );
 
       if (mounted) {
@@ -84,13 +183,25 @@ class _ProfileViewState extends State<ProfileView> {
           _isLoading = false;
           _isEditing = false;
         });
+        
+        if (success) {
+          // Recarregar dados do usuário para atualizar a profissão selecionada
+          await _loadUserData();
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Perfil atualizado com sucesso!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Perfil atualizado com sucesso!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erro ao atualizar perfil: ${authController.errorMessage ?? 'Erro desconhecido'}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -162,10 +273,8 @@ class _ProfileViewState extends State<ProfileView> {
         final user = authController.currentUser;
 
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('Meu Perfil'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            foregroundColor: Colors.white,
+          appBar: const CustomAppBar(
+            title: 'Meu Perfil',
             /*actions: [
               if (!_isEditing)
                 IconButton(
@@ -278,104 +387,76 @@ class _ProfileViewState extends State<ProfileView> {
 
                                   // Campo Profissão
                                   if(_isEditing) ...[
-                                  StreamBuilder<List<ProfessionModel>>(
-                                    stream: _professionService.getActiveProfessions(),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState == ConnectionState.waiting) {
-                                        return const LinearProgressIndicator();
-                                      }
-                                      
-                                      if (snapshot.hasError) {
-                                        return Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            border: Border.all(color: Colors.orange),
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              const Icon(Icons.info_outline, color: Colors.orange, size: 20),
-                                              const SizedBox(width: 8),
-                                              Expanded(
-                                                child: Text(
-                                                  'Erro ao carregar profissões',
-                                                  style: Theme.of(context).textTheme.bodySmall,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      }
-                                      
-                                      final professions = snapshot.data ?? [];
-                                      
-                                      if (professions.isEmpty) {
-                                        return DropdownButtonFormField<ProfessionModel>(
-                                          value: null,
-                                          isExpanded: true,
-                                          isDense: true,
-
+                                  if (!_professionsLoaded)
+                                    const LinearProgressIndicator()
+                                  else
+                                    Autocomplete<String>(
+                                      key: ValueKey<String>('profession_${_professions.length}'),
+                                      initialValue: TextEditingValue(text: _professionController.text),
+                                      optionsBuilder: (TextEditingValue textEditingValue) {
+                                        if (textEditingValue.text.isEmpty) {
+                                          return _professions.map((p) => p.name).toList();
+                                        }
+                                        final query = textEditingValue.text.toLowerCase();
+                                        return _professions
+                                            .where((p) => p.name.toLowerCase().contains(query))
+                                            .map((p) => p.name)
+                                            .toList();
+                                      },
+                                      onSelected: (String selected) {
+                                        _professionController.text = selected;
+                                        try {
+                                          final found = _professions.firstWhere(
+                                            (p) => p.name == selected,
+                                          );
+                                          _selectedProfession = found;
+                                        } catch (e) {
+                                          _selectedProfession = null;
+                                        }
+                                      },
+                                      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                                        // Sincroniza valor inicial apenas quando o campo não está em foco
+                                        if (controller.text != _professionController.text && !focusNode.hasFocus) {
+                                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                                            if (!focusNode.hasFocus && controller.text != _professionController.text) {
+                                              controller.text = _professionController.text;
+                                            }
+                                          });
+                                        }
+                                        
+                                        return TextFormField(
+                                          controller: controller,
+                                          focusNode: focusNode,
                                           decoration: InputDecoration(
                                             labelText: 'Profissão',
-
-                                            prefixIcon: Icon(
-                                              Icons.work,
-                                            ),
+                                            prefixIcon: const Icon(Icons.work),
                                             border: OutlineInputBorder(
                                               borderRadius: BorderRadius.circular(12),
                                             ),
-
-                                          ),
-                                          items: [],
-                                          onChanged: null,
-                                        );
-                                      }
-                                      
-                                      // Encontrar o valor selecionado na lista atual
-                                      ProfessionModel? currentSelection;
-                                      if (_selectedProfession != null) {
-                                        try {
-                                          currentSelection = professions.firstWhere(
-                                            (p) => p.id == _selectedProfession!.id,
-                                          );
-                                        } catch (e) {
-                                          currentSelection = null;
-                                        }
-                                      } else {
-                                        currentSelection = null;
-                                      }
-                                      
-                                      return DropdownButtonFormField<ProfessionModel>(
-                                        initialValue: currentSelection,
-                                        isExpanded: true,
-                                        isDense: true,
-
-                                        decoration: InputDecoration(
-                                          labelText: 'Profissão',
-
-                                          prefixIcon: Icon(
-                                            Icons.work,
+                                            enabledBorder: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(12),
+                                              borderSide: BorderSide(
+                                                color: Theme.of(context).colorScheme.outline,
+                                              ),
                                             ),
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(12),
                                           ),
-
-                                        ),
-                                        items: professions.map((profession) {
-                                          return DropdownMenuItem<ProfessionModel>(
-                                            value: profession,
-                                            child: Text(profession.name),
-                                          );
-                                        }).toList(),
-                                        onChanged: _isEditing ? (value) {
-                                          setState(() {
-                                            _selectedProfession = value;
-                                            _professionController.text = value?.name ?? '';
-                                          });
-                                        } : null,
-                                      );
-                                    },
-                                  ),
+                                          onChanged: (value) {
+                                            // Atualiza apenas os valores internos, SEM setState para manter o foco
+                                            _professionController.text = value;
+                                            // Atualiza profissão selecionada sem rebuild
+                                            try {
+                                              final found = _professions.firstWhere(
+                                                (p) => p.name == value,
+                                              );
+                                              _selectedProfession = found;
+                                            } catch (e) {
+                                              _selectedProfession = null;
+                                            }
+                                          },
+                                          onFieldSubmitted: (value) => onFieldSubmitted(),
+                                        );
+                                      },
+                                    ),
                                   ] else ...[
                                     TextFormField(
                                       enabled: false,

@@ -90,16 +90,27 @@ class AuthService {
     try {
       final user = _auth.currentUser;
       if (user != null) {
-        await user.updateDisplayName(displayName);
-        if (photoURL != null) {
-          await user.updatePhotoURL(photoURL);
+        // Atualiza displayName apenas se fornecido e não vazio
+        if (displayName != null && displayName.trim().isNotEmpty) {
+          await user.updateDisplayName(displayName.trim());
         }
+        
+        if (photoURL != null && photoURL.trim().isNotEmpty) {
+          await user.updatePhotoURL(photoURL.trim());
+        }
+        
+        // Recarrega o usuário para garantir que os dados estão atualizados
         await user.reload();
+        
+        // Aguarda um pouco para garantir a propagação
+        await Future.delayed(const Duration(milliseconds: 200));
 
         // Salvar profissão no Firestore
-        if (professionId != null) {
+        if (professionId != null && professionId.isNotEmpty) {
           await UserService.instance.updateUserProfession(user.uid, professionId);
         }
+      } else {
+        throw Exception('Usuário não autenticado');
       }
     } catch (e) {
       throw Exception('Erro ao atualizar perfil: $e');
